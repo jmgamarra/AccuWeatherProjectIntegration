@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -22,8 +24,20 @@ namespace InterviewProject
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddControllersWithViews();
-
+            services.AddControllersWithViews()
+                         .AddJsonOptions(options =>
+                         {
+                             options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                             options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                         });
+            // Swagger configuration
+            services.AddSwaggerGen();
+            // Registrar HttpClient con una BaseAddress
+            services.AddHttpClient("AccuWeatherClient", client =>
+            {
+                client.BaseAddress = new Uri("http://dataservice.accuweather.com/");
+                
+            });
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
             {
@@ -37,6 +51,13 @@ namespace InterviewProject
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                // Enable Swagger in development
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                    c.RoutePrefix = string.Empty; // Opcional: hace que Swagger esté en la raíz
+                });
             }
             else
             {
