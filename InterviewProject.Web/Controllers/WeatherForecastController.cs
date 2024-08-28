@@ -1,4 +1,5 @@
 ﻿using InteviewProject.Application;
+using InteviewProject.Application.Validations.Commands;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
@@ -19,11 +20,11 @@ namespace InterviewProject.Controllers
         }
 
         [HttpGet("locations")]
-        public async Task<IActionResult> GetLocations(string location)
+        public async Task<IActionResult> GetLocations([FromQuery] GetLocationsCommand command)
         {
             try
             {
-                var locations = await _weatherService.GetLocationsAsync(location);
+                var locations = await _weatherService.GetLocationsAsync(command.Location);
                 return Ok(locations);
             }
             catch (System.Exception ex)
@@ -32,11 +33,11 @@ namespace InterviewProject.Controllers
             }
         }
         [HttpGet("forecasts")]
-        public async Task<IActionResult> Get5DailyForecasts(string selectedKeyLocation)
+        public async Task<IActionResult> Get5DailyForecasts([FromQuery] GetForecastsCommand command)
         {
             try
             {
-                var forecastList = await _weatherService.Get5DailyForecastsAsync(selectedKeyLocation);
+                var forecastList = await _weatherService.Get5DailyForecastsAsync(command.SelectedKeyLocation);
                 return Ok(forecastList);
             }
             catch (System.Exception ex)

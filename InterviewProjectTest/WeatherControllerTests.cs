@@ -1,6 +1,7 @@
 using InterviewProject.Controllers; // Ajusta el namespace
 using InterviewProject.Domain.Location;
 using InteviewProject.Application;
+using InteviewProject.Application.Validations.Commands;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -15,6 +16,8 @@ public class WeatherForecastControllerTests
         {
             new Location { Key = "12345", LocalizedName = "Sample Location" }
         };
+        var command = new GetLocationsCommand();
+        command.Location = "lima";
 
         var weatherServiceMock = new Mock<IWeatherService>();
         weatherServiceMock.Setup(x => x.GetLocationsAsync(It.IsAny<string>())).ReturnsAsync(locations);
@@ -23,7 +26,7 @@ public class WeatherForecastControllerTests
         var controller = new WeatherForecastController(logger, weatherServiceMock.Object);
 
         // Act
-        var result = await controller.GetLocations("SampleLocation");
+        var result = await controller.GetLocations(command);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
@@ -37,7 +40,8 @@ public class WeatherForecastControllerTests
     {
         // Arrange
         var weatherServiceMock = new Mock<IWeatherService>();
-
+        var command = new GetLocationsCommand();
+        command.Location = "lima";
         // Configura el mock para simular un fallo en el servicio
         weatherServiceMock
             .Setup(service => service.GetLocationsAsync(It.IsAny<string>()))
@@ -47,7 +51,7 @@ public class WeatherForecastControllerTests
         var controller = new WeatherForecastController(logger, weatherServiceMock.Object);
 
         // Act
-        var result = await controller.GetLocations("SampleLocation");
+        var result = await controller.GetLocations(command);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -60,7 +64,8 @@ public class WeatherForecastControllerTests
     {
         // Arrange
         var weatherServiceMock = new Mock<IWeatherService>();
-
+        var command = new GetLocationsCommand();
+        command.Location = "lima";
         // Configura el mock para devolver una lista vacía
         weatherServiceMock
             .Setup(service => service.GetLocationsAsync(It.IsAny<string>()))
@@ -70,7 +75,7 @@ public class WeatherForecastControllerTests
         var controller = new WeatherForecastController(logger,weatherServiceMock.Object);
 
         // Act
-        var result = await controller.GetLocations("SampleLocation");
+        var result = await controller.GetLocations(command);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
