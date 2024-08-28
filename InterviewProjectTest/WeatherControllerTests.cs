@@ -1,10 +1,9 @@
-using InterviewProject.Common; // Asegúrate de usar System.Text.Json para deserializar JSON
 using InterviewProject.Controllers; // Ajusta el namespace
+using InterviewProject.Domain.Location;
+using InteviewProject.Application;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Moq.Protected;
-using System.Net;
 
 public class WeatherForecastControllerTests
 {
@@ -12,85 +11,40 @@ public class WeatherForecastControllerTests
     public async Task GetLocations_ReturnsOkResult_WithListOfLocations()
     {
         // Arrange
-        var mockHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-
-        var requestUri = "/locations/v1/cities/autocomplete?apikey=MlbQLzAyldhmvGCQ4A90YirKmmHIcSW6&q=SampleLocation&language=en-us";
-        var expectedResponse = "[{\"Key\": \"12345\", \"LocalizedName\": \"Sample Location\"}]";
-
-        mockHandler
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == HttpMethod.Get &&
-                    req.RequestUri.PathAndQuery == requestUri),
-                ItExpr.IsAny<CancellationToken>()
-            )
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(expectedResponse)
-            })
-            .Verifiable();
-
-        var httpClient = new HttpClient(mockHandler.Object)
+        var locations = new List<Location>
         {
-            BaseAddress = new Uri("http://localhost") // Configura la URI base
+            new Location { Key = "12345", LocalizedName = "Sample Location" }
         };
 
-        var httpClientFactory = new Mock<IHttpClientFactory>();
-        httpClientFactory.Setup(factory => factory.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        var weatherServiceMock = new Mock<IWeatherService>();
+        weatherServiceMock.Setup(x => x.GetLocationsAsync(It.IsAny<string>())).ReturnsAsync(locations);
 
         var logger = Mock.Of<ILogger<WeatherForecastController>>();
-        var controller = new WeatherForecastController(logger, httpClientFactory.Object);
+        var controller = new WeatherForecastController(logger, weatherServiceMock.Object);
 
         // Act
         var result = await controller.GetLocations("SampleLocation");
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var locations = Assert.IsType<List<Location>>(okResult.Value);
-        Assert.Single(locations);
-        Assert.Equal("12345", locations[0].Key);
-        Assert.Equal("Sample Location", locations[0].LocalizedName);
-
-        mockHandler.Verify(); // Verifica que SendAsync fue llamado
+        var returnedLocations = Assert.IsType<List<Location>>(okResult.Value);
+        Assert.Single(returnedLocations);
+        Assert.Equal("12345", returnedLocations[0].Key);
+        Assert.Equal("Sample Location", returnedLocations[0].LocalizedName);
     }
     [Fact]
     public async Task GetLocations_ReturnsBadRequest_WhenApiResponseIsUnsuccessful()
     {
         // Arrange
-        var mockHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        var weatherServiceMock = new Mock<IWeatherService>();
 
-        var requestUri = "/locations/v1/cities/autocomplete?apikey=MlbQLzAyldhmvGCQ4A90YirKmmHIcSW6&q=SampleLocation&language=en-us";
-        var errorResponse = "Error retrieving location key.";
-
-        mockHandler
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == HttpMethod.Get &&
-                    req.RequestUri.PathAndQuery == requestUri),
-                ItExpr.IsAny<CancellationToken>()
-            )
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Content = new StringContent(errorResponse)
-            })
-            .Verifiable();
-
-        var httpClient = new HttpClient(mockHandler.Object)
-        {
-            BaseAddress = new Uri("http://localhost")
-        };
-
-        var httpClientFactory = new Mock<IHttpClientFactory>();
-        httpClientFactory.Setup(factory => factory.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        // Configura el mock para simular un fallo en el servicio
+        weatherServiceMock
+            .Setup(service => service.GetLocationsAsync(It.IsAny<string>()))
+            .ThrowsAsync(new HttpRequestException("Error retrieving location key."));
 
         var logger = Mock.Of<ILogger<WeatherForecastController>>();
-        var controller = new WeatherForecastController(logger, httpClientFactory.Object);
+        var controller = new WeatherForecastController(logger, weatherServiceMock.Object);
 
         // Act
         var result = await controller.GetLocations("SampleLocation");
@@ -99,43 +53,21 @@ public class WeatherForecastControllerTests
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Error retrieving location key.", badRequestResult.Value);
 
-        mockHandler.Verify(); // Verifica que SendAsync fue llamado
+        weatherServiceMock.Verify(); // Verifica que GetLocationsAsync fue llamado
     }
     [Fact]
     public async Task GetLocations_ReturnsOkResult_WithEmptyList_WhenApiResponseIsEmpty()
     {
         // Arrange
-        var mockHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        var weatherServiceMock = new Mock<IWeatherService>();
 
-        var requestUri = "/locations/v1/cities/autocomplete?apikey=MlbQLzAyldhmvGCQ4A90YirKmmHIcSW6&q=SampleLocation&language=en-us";
-        var emptyResponse = "[]";
-
-        mockHandler
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == HttpMethod.Get &&
-                    req.RequestUri.PathAndQuery == requestUri),
-                ItExpr.IsAny<CancellationToken>()
-            )
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(emptyResponse)
-            })
-            .Verifiable();
-
-        var httpClient = new HttpClient(mockHandler.Object)
-        {
-            BaseAddress = new Uri("http://localhost")
-        };
-
-        var httpClientFactory = new Mock<IHttpClientFactory>();
-        httpClientFactory.Setup(factory => factory.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        // Configura el mock para devolver una lista vacía
+        weatherServiceMock
+            .Setup(service => service.GetLocationsAsync(It.IsAny<string>()))
+            .ReturnsAsync(new List<Location>());
 
         var logger = Mock.Of<ILogger<WeatherForecastController>>();
-        var controller = new WeatherForecastController(logger, httpClientFactory.Object);
+        var controller = new WeatherForecastController(logger,weatherServiceMock.Object);
 
         // Act
         var result = await controller.GetLocations("SampleLocation");
@@ -145,7 +77,7 @@ public class WeatherForecastControllerTests
         var locations = Assert.IsType<List<Location>>(okResult.Value);
         Assert.Empty(locations);
 
-        mockHandler.Verify(); // Verifica que SendAsync fue llamado
+        weatherServiceMock.Verify(); // Verifica que GetLocationsAsync fue llamado
     }
 
 }

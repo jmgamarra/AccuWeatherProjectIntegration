@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json.Serialization;
+using InteviewProject.Application;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -32,6 +33,7 @@ namespace InterviewProject
                          });
             // Swagger configuration
             services.AddSwaggerGen();
+            services.AddTransient<IWeatherService, WeatherService>();
             // Registrar HttpClient con una BaseAddress
             services.AddHttpClient("AccuWeatherClient", client =>
             {

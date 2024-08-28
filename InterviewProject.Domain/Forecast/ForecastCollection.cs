@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace InterviewProject.Common
+namespace InterviewProject.Domain.Forecast
 {
     public class ForecastCollection
     {

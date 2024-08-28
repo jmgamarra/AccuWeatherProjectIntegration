@@ -1,4 +1,4 @@
-﻿namespace InterviewProject.Common
+﻿namespace InterviewProject.Domain.Location
 {
     public class Location
     {

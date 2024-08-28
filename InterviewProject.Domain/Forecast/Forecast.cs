@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace InterviewProject.Common
+﻿namespace InterviewProject.Domain.Forecast
 {
     public class Forecast
     {
