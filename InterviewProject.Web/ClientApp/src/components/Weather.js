@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@material-ui/core';
 
 export class Weather extends Component {
   static displayName = Weather.name;
@@ -14,6 +15,8 @@ export class Weather extends Component {
 
   static renderForecastsTable(forecasts) {
     return (
+      <>
+      <Table></Table>
       <table className='table table-striped' aria-labelledby="tabelLabel">
         <thead>
           <tr>
@@ -34,6 +37,7 @@ export class Weather extends Component {
           )}
         </tbody>
       </table>
+      </>
     );
   }
 

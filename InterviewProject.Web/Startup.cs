@@ -44,6 +44,16 @@ namespace InterviewProject
                 client.BaseAddress = new Uri("http://dataservice.accuweather.com/");
                 
             });
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigins",
+                    builder =>
+                    {
+                        builder.WithOrigins("http://localhost:3000") // URL de tu frontend
+                               .AllowAnyHeader()
+                               .AllowAnyMethod();
+                    });
+            });
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
             {
@@ -76,7 +86,7 @@ namespace InterviewProject
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
-
+            app.UseCors("AllowSpecificOrigins");
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>
