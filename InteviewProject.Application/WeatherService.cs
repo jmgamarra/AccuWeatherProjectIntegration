@@ -1,4 +1,5 @@
-﻿using InterviewProject.Domain.Forecast;
+﻿using InterviewProject.Application.Pagination;
+using InterviewProject.Domain.Forecast;
 using InterviewProject.Domain.Location;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
@@ -23,13 +24,26 @@ namespace InteviewProject.Application
             return JsonSerializer.Deserialize<ForecastCollection>(forecastData);
         }
 
-        async Task<List<Location>> IWeatherService.GetLocationsAsync(string location)
+        async Task<PaginatedResponse<Location>> IWeatherService.GetLocationsAsync(string location,int page = 1, int pageSize = 10)
         {
             var requestUrl = $"locations/v1/cities/autocomplete?apikey={_apiKey}&q={location}&language=en-us";
             var response = await _httpClient.GetAsync(requestUrl);
             response.EnsureSuccessStatusCode();
             var locationData = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<List<Location>>(locationData);
+            var listLocations= JsonSerializer.Deserialize<List<Location>>(locationData);
+            var listLocationsSize = listLocations.Count;
+            var paginatedLocations = listLocations
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new PaginatedResponse<Location>
+            {
+                Data = paginatedLocations,
+                TotalCount = listLocationsSize,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

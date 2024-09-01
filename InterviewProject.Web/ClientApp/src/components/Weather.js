@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@material-ui/core';
+import { Table } from '@material-ui/core';
 
 export class Weather extends Component {
   static displayName = Weather.name;
