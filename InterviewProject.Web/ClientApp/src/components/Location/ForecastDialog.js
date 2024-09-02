@@ -1,6 +1,6 @@
 import React from 'react';
-import { Table, TableBody, TableCell, TableContainer,TableHead,TableRow,Dialog,Paper, DialogTitle, DialogContent, DialogActions, Typography, Button } from '@material-ui/core';
-const LocationDialog = ({ open, onClose, forecasts }) => {
+import { Table, TableBody, TableCell, TableContainer,TableHead,TableRow,Dialog,Paper, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
+const ForecastDialog = ({ open, onClose, forecasts }) => {
     const formatDate = (dateString) => {
         const options = { day: '2-digit', month: 'numeric', year: 'numeric' };
         return new Date(dateString).toLocaleDateString('es-ES', options); // Usa el locale adecuado, 'es-ES' para español
@@ -39,4 +39,4 @@ const LocationDialog = ({ open, onClose, forecasts }) => {
   );
 };
 
-export default LocationDialog;
+export default ForecastDialog;

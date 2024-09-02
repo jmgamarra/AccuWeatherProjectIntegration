@@ -1,9 +1,9 @@
 import React, { useState,useEffect } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TextField,TableRow,TablePagination,Button, Paper, CircularProgress, Typography, Container } from '@material-ui/core';
-import WeatherApi from '../../WeatherApi';
-import LocationDialog from './LocationDialog';
 import './LocationList.css';
-import axios from 'axios';
+import ForecastDialog from './ForecastDialog';
+import { getLocations, getForecasts } from '../../services/WeatherServices';  
+import Location from '../../models/Location';
 const LocationList = () => {
   const defaultPageSize = parseInt(process.env.REACT_APP_PAGE_SIZE,10) || 10;
   const [locations, setLocations] = useState([]);
@@ -15,31 +15,29 @@ const LocationList = () => {
   const [rowsPerPage, setRowsPerPage] = useState(defaultPageSize);
   const [totalLocations, setTotalLocations] = useState(0);
 
-  useEffect(() => {
-    getLocations(currentPage);
-  }, [currentPage, rowsPerPage]);
-  const getLocations = async (page) => {
-    try {
+ 
+    const getData = async () => {
       setLoading(true);
-      //https://localhost:44377/WeatherForecast/locations?Location=per
-      const response = await axios.get('https://localhost:44377/WeatherForecast/locations', {
-        params: {
-          Location: searchTerm,
-          page: page,
-          size: rowsPerPage
-        }
-      });
-      //const response = await WeatherApi.get('/WeatherForecast/locations?Location=per');
-      console.log('API Response:', response.data);
-      setLocations(response.data.data);
-      setTotalLocations(response.data.totalCount);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error al obtener las ubicaciones:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const locationData = await getLocations(searchTerm, currentPage, rowsPerPage);
+        const loadEntityLocations = locationData.data.map(loc => new Location(loc.key, loc.localizedName, []));
+        setLocations(loadEntityLocations);
+        setTotalLocations(locationData.totalCount);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error retrieving data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    useEffect(() => {
+      if(searchTerm){
+        getData();
+      }
+    }, [searchTerm,currentPage, rowsPerPage]);
+   
+  
+
   const handlePageChange = (event, newPage) => {
     setCurrentPage(newPage + 1);
   };
@@ -52,15 +50,16 @@ const LocationList = () => {
     setSearchTerm(event.target.value);
   };
   const handleSearchClick=(event)=>{
-    getLocations(1);
+    setCurrentPage(1);
+    getData();
   };
  const handleRowDoubleClick = async (location) => {
     try {
-      const response = await axios.get(`https://localhost:44377/WeatherForecast/forecasts?SelectedKeyLocation=${location.key}`);
-      setSelectedForecast(response.data.dailyForecasts);
-      setOpenDialog(true); // Abre el popup con la información ya cargada
+      const forecastData = await getForecasts(location.key);
+      setSelectedForecast(forecastData.dailyForecasts);
+      setOpenDialog(true);
     } catch (error) {
-      console.error('Error fetching forecast data:', error);
+      console.error('Error retrieving forecast detail:', error);
     }
   };
   const handleCloseDialog = () => {
@@ -116,7 +115,7 @@ const LocationList = () => {
         </TableContainer>
       )}
          {selectedForecasts && (
-        <LocationDialog
+        <ForecastDialog
           open={openDialog}
           onClose={handleCloseDialog}
           forecasts={selectedForecasts}

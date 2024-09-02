@@ -1,4 +1,5 @@
-using InterviewProject.Controllers; // Ajusta el namespace
+using InterviewProject.Application.Pagination;
+using InterviewProject.Controllers; 
 using InterviewProject.Domain.Location;
 using InteviewProject.Application;
 using InteviewProject.Application.Validations.Commands;
@@ -14,13 +15,21 @@ public class WeatherForecastControllerTests
         // Arrange
         var locations = new List<Location>
         {
-            new Location { Key = "12345", LocalizedName = "Sample Location" }
+            new Location { Key = "12345", LocalizedName = "Location 1" }
         };
-        var command = new GetLocationsCommand();
-        command.Location = "lima";
+        var response = new PaginatedResponse<Location>()
+        {
+            Data = locations,
+            Page = 1,
+            PageSize = 10,
+            TotalCount = 10
+        };
+
+        var command = new GetLocationsCommand { Location = "lima", Page = 1, Size = 10 };
 
         var weatherServiceMock = new Mock<IWeatherService>();
-        weatherServiceMock.Setup(x => x.GetLocationsAsync(It.IsAny<string>())).ReturnsAsync(locations);
+        weatherServiceMock.Setup(x => x.GetLocationsAsync(It.IsAny<string>(), 1, 10))
+            .ReturnsAsync(response);
 
         var logger = Mock.Of<ILogger<WeatherForecastController>>();
         var controller = new WeatherForecastController(logger, weatherServiceMock.Object);
@@ -30,21 +39,21 @@ public class WeatherForecastControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedLocations = Assert.IsType<List<Location>>(okResult.Value);
+        var returnedResponse = Assert.IsType<PaginatedResponse<Location>>(okResult.Value);
+        var returnedLocations = returnedResponse.Data;
         Assert.Single(returnedLocations);
         Assert.Equal("12345", returnedLocations[0].Key);
-        Assert.Equal("Sample Location", returnedLocations[0].LocalizedName);
+        Assert.Equal("Location 1", returnedLocations[0].LocalizedName);
     }
+
     [Fact]
     public async Task GetLocations_ReturnsBadRequest_WhenApiResponseIsUnsuccessful()
     {
         // Arrange
+        var command = new GetLocationsCommand { Location = "lima", Page = 1, Size = 10 };
+
         var weatherServiceMock = new Mock<IWeatherService>();
-        var command = new GetLocationsCommand();
-        command.Location = "lima";
-        // Configura el mock para simular un fallo en el servicio
-        weatherServiceMock
-            .Setup(service => service.GetLocationsAsync(It.IsAny<string>()))
+        weatherServiceMock.Setup(service => service.GetLocationsAsync(It.IsAny<string>(), 1, 10))
             .ThrowsAsync(new HttpRequestException("Error retrieving location key."));
 
         var logger = Mock.Of<ILogger<WeatherForecastController>>();
@@ -57,32 +66,43 @@ public class WeatherForecastControllerTests
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Error retrieving location key.", badRequestResult.Value);
 
-        weatherServiceMock.Verify(); // Verifica que GetLocationsAsync fue llamado
+        // Verifica que GetLocationsAsync fue llamado
+        weatherServiceMock.Verify(x => x.GetLocationsAsync(It.IsAny<string>(), 1, 10), Times.Once);
     }
+
     [Fact]
     public async Task GetLocations_ReturnsOkResult_WithEmptyList_WhenApiResponseIsEmpty()
     {
         // Arrange
+        var locations = new List<Location>();  //empty list
+        var response = new PaginatedResponse<Location>()
+        {
+            Data = locations,
+            Page = 1,
+            PageSize = 10,
+            TotalCount = 0
+        };
+
+        var command = new GetLocationsCommand { Location = "lima", Page = 1, Size = 10 };
+
         var weatherServiceMock = new Mock<IWeatherService>();
-        var command = new GetLocationsCommand();
-        command.Location = "lima";
-        // Configura el mock para devolver una lista vacía
-        weatherServiceMock
-            .Setup(service => service.GetLocationsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<Location>());
+        // Mock with empty list
+        weatherServiceMock.Setup(service => service.GetLocationsAsync(It.IsAny<string>(), 1, 10))
+            .ReturnsAsync(response);
 
         var logger = Mock.Of<ILogger<WeatherForecastController>>();
-        var controller = new WeatherForecastController(logger,weatherServiceMock.Object);
+        var controller = new WeatherForecastController(logger, weatherServiceMock.Object);
 
         // Act
         var result = await controller.GetLocations(command);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var locations = Assert.IsType<List<Location>>(okResult.Value);
-        Assert.Empty(locations);
+        var returnedResponse = Assert.IsType<PaginatedResponse<Location>>(okResult.Value);
+        Assert.Empty(returnedResponse.Data);  // empty list
+        Assert.Equal(0, returnedResponse.TotalCount);  // TotalCount =0
 
-        weatherServiceMock.Verify(); // Verifica que GetLocationsAsync fue llamado
+        // Verifica que GetLocationAsync
+        weatherServiceMock.Verify(x => x.GetLocationsAsync(It.IsAny<string>(), 1, 10), Times.Once);
     }
-
 }

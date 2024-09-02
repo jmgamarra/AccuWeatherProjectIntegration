@@ -17,7 +17,7 @@ export default class App extends Component {
         <Route exact path='/' component={Home} />
         <Route path='/counter' component={Counter} />
         <Route path='/weather' component={Weather} />
-        <Route path='/new' component={LocationList} />
+        <Route path='/forecast' component={LocationList} />
       </Layout>
     );
   }

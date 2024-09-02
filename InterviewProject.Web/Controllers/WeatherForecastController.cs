@@ -25,9 +25,6 @@ namespace InterviewProject.Controllers
         {
             try
             {
-                Console.WriteLine($"Received Location: {command.Location}");
-                Console.WriteLine($"Received Page: {command.Page}");
-                Console.WriteLine($"Received Size: {command.Size}");
                 var locations = await _weatherService.GetLocationsAsync(command.Location, command.Page, command.Size);
                 return Ok(locations);
             }
